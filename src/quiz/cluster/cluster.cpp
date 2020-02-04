@@ -80,7 +80,7 @@ std::vector<int> clusterHelper(int i,
                                std::vector<int>& cluster,
                                std::vector<bool>& processed,
                                const std::vector<std::vector<float>>& points,
-                               KdTree* const tree,
+                               std::unique_ptr<KdTree>& tree,
                                float distanceTol) {
     processed[i] = true;
     cluster.push_back(i);
@@ -92,7 +92,7 @@ std::vector<int> clusterHelper(int i,
 }
 
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points,
-        KdTree* tree,
+                                               std::unique_ptr<KdTree>& tree,
         float distanceTol)
 {
 	std::vector<std::vector<int>> clusters;
@@ -138,7 +138,7 @@ int main ()
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
-	auto tree = new KdTree;
+	auto tree = std::unique_ptr<KdTree>(new KdTree);
   
     for (int i=0; i<points.size(); i++) 
     	tree->insert(points[i],i); 

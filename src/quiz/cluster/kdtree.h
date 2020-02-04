@@ -14,8 +14,15 @@ struct Node
 	Node* right;
 
 	Node(const std::vector<float>& arr, int setId, int cmpIndex)
-	:	point(arr), id(setId), compare_index(cmpIndex), left(NULL), right(NULL)
+	:	point(arr), id(setId), compare_index(cmpIndex), left(nullptr), right(nullptr)
 	{}
+
+	~Node(){
+	    if(left!= nullptr)
+	        delete left;
+	    if(right!= nullptr)
+	        delete right;
+	}
 };
 
 struct KdTree
@@ -25,6 +32,11 @@ struct KdTree
 	KdTree()
 	: root(nullptr)
 	{}
+
+	~KdTree(){
+	    if(root!= nullptr)
+	        delete root;
+	}
 
 	void insert(const std::vector<float> & point, int id)
 	{
