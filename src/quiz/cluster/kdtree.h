@@ -9,11 +9,12 @@ struct Node
 {
 	std::vector<float> point;
 	int id;
+	int compare_index;
 	Node* left;
 	Node* right;
 
-	Node(std::vector<float> arr, int setId)
-	:	point(arr), id(setId), left(NULL), right(NULL)
+	Node(const std::vector<float>& arr, int setId, int cmpIndex)
+	:	point(arr), id(setId), compare_index(cmpIndex), left(NULL), right(NULL)
 	{}
 };
 
@@ -22,21 +23,48 @@ struct KdTree
 	Node* root;
 
 	KdTree()
-	: root(NULL)
+	: root(nullptr)
 	{}
 
-	void insert(std::vector<float> point, int id)
+	void insert(const std::vector<float> & point, int id)
 	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
+		_insert(root, point, id, 0);
+	}
 
+	void _insert(Node*&node, const std::vector<float>& point, int id, int cmpIndex){
+	    if(node==nullptr){
+	        node = new Node(point, id, cmpIndex);
+	    } else if(point[node->compare_index] < node->point[node->compare_index]){
+	        _insert(node->left, point, id, (cmpIndex + 1)%point.size());
+	    } else {
+            _insert(node->right, point, id, (cmpIndex + 1)%point.size());
+	    }
 	}
 
 	// return a list of point ids in the tree that are within distance of target
-	std::vector<int> search(std::vector<float> target, float distanceTol)
+	std::vector<int> search(const std::vector<float>&target, float distanceTol)
 	{
-		std::vector<int> ids;
-		return ids;
+        std::vector<int> ids;
+        _search(ids, root, target, distanceTol);
+        return ids;
+	}
+
+    void _search(std::vector<int>& ids, Node* node, const std::vector<float>& target, float distanceTol){
+	    int ci = node -> compare_index;
+	    if(node->left != nullptr && node->point[ci] > target[ci] - distanceTol){
+            _search(ids, node->left, target, distanceTol);
+	    }
+        if(node-> right != nullptr && node->point[ci] < target[ci] + distanceTol){
+            _search(ids, node->right, target, distanceTol);
+        }
+        float dist = 0;
+	    for(int i=0; i<target.size(); i++){
+	        float d = target[i] - node->point[i];
+	        dist += d*d;
+	    }
+	    if(dist < distanceTol*distanceTol){
+	        ids.push_back(node->id);
+	    }
 	}
 	
 

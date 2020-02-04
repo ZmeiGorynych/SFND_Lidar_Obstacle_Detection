@@ -75,16 +75,49 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+
+std::vector<int> clusterHelper(int i,
+                               std::vector<int>& cluster,
+                               std::vector<bool>& processed,
+                               const std::vector<std::vector<float>>& points,
+                               KdTree* const tree,
+                               float distanceTol) {
+    processed[i] = true;
+    cluster.push_back(i);
+    auto nearby = tree->search(points[i], distanceTol);
+    for (int j: nearby) {
+        if (!processed[j])
+            clusterHelper(j, cluster, processed, points, tree, distanceTol);
+    }
+}
+
+std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points,
+        KdTree* tree,
+        float distanceTol)
 {
-
-	// TODO: Fill out this function to return list of indices for each cluster
-
 	std::vector<std::vector<int>> clusters;
+	std::vector<bool> processed(points.size(), false);
+
+	int i = 0;
+	while(i<points.size()){
+//find the next unprocessed point
+	    if(processed[i]){
+	        i++;
+            continue;
+	    }
+	    // and do the cluster around it
+        std::vector<int> next_cluster;
+	    clusterHelper(i, next_cluster, processed, points, tree, distanceTol);
+	    clusters.push_back(next_cluster);
+	    i++;
+	}
  
 	return clusters;
 
 }
+
+
+
 
 int main ()
 {
@@ -97,6 +130,7 @@ int main ()
   	window.y_max =  10;
   	window.z_min =   0;
   	window.z_max =   0;
+
 	pcl::visualization::PCLVisualizer::Ptr viewer = initScene(window, 25);
 
 	// Create data
@@ -104,7 +138,7 @@ int main ()
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
-	KdTree* tree = new KdTree;
+	auto tree = new KdTree;
   
     for (int i=0; i<points.size(); i++) 
     	tree->insert(points[i],i); 
@@ -117,6 +151,7 @@ int main ()
   	for(int index : nearby)
       std::cout << index << ",";
   	std::cout << std::endl;
+
 
   	// Time segmentation process
   	auto startTime = std::chrono::steady_clock::now();
