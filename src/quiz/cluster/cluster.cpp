@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 #include "kdtree.h"
+#include "euclidean_cluster.h"
 
 // Arguments:
 // window is the region to draw box around
@@ -76,47 +77,6 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 }
 
 
-std::vector<int> clusterHelper(int i,
-                               std::vector<int>& cluster,
-                               std::vector<bool>& processed,
-                               const std::vector<std::vector<float>>& points,
-                               std::unique_ptr<KdTree>& tree,
-                               float distanceTol) {
-    processed[i] = true;
-    cluster.push_back(i);
-    auto nearby = tree->search(points[i], distanceTol);
-    for (int j: nearby) {
-        if (!processed[j])
-            clusterHelper(j, cluster, processed, points, tree, distanceTol);
-    }
-}
-
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points,
-                                               std::unique_ptr<KdTree>& tree,
-        float distanceTol)
-{
-	std::vector<std::vector<int>> clusters;
-	std::vector<bool> processed(points.size(), false);
-
-	int i = 0;
-	while(i<points.size()){
-//find the next unprocessed point
-	    if(processed[i]){
-	        i++;
-            continue;
-	    }
-	    // and do the cluster around it
-        std::vector<int> next_cluster;
-	    clusterHelper(i, next_cluster, processed, points, tree, distanceTol);
-	    clusters.push_back(next_cluster);
-	    i++;
-	}
- 
-	return clusters;
-
-}
-
-
 
 
 int main ()
@@ -139,13 +99,13 @@ int main ()
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
 	auto tree = std::unique_ptr<KdTree>(new KdTree);
-  
-    for (int i=0; i<points.size(); i++) 
-    	tree->insert(points[i],i); 
+
+    for (int i=0; i<points.size(); i++)
+    	tree->insert(points[i],i);
 
   	int it = 0;
   	render2DTree(tree->root,viewer,window, it);
-  
+
   	std::cout << "Test Search" << std::endl;
   	std::vector<int> nearby = tree->search({-6,7},3.0);
   	for(int index : nearby)
@@ -175,10 +135,10 @@ int main ()
   	}
   	if(clusters.size()==0)
   		renderPointCloud(viewer,cloud,"data");
-	
+
   	while (!viewer->wasStopped ())
   	{
   	  viewer->spinOnce ();
   	}
-  	
+
 }

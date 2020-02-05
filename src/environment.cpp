@@ -79,11 +79,11 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
     renderPointCloud(viewer, filterCloud, "filterCloud");
 
 // Now let's segment out the ground
-    auto segmentCloud = pointProcessorI -> SegmentPlane(filterCloud, 100, 0.2);
+    auto segmentCloud = pointProcessorI -> MySegmentPlane(filterCloud, 100, 0.2);
 //    renderPointCloud(viewer, segmentCloud.first, "obstCloud",  Color(1,0,0));
     renderPointCloud(viewer, segmentCloud.second, "planeCloud",  Color(0,1,0));
 //    Now let's do some clustering
-    auto cloudClusters = pointProcessorI -> Clustering(segmentCloud.first, 0.5, 5, 1000);;
+    auto cloudClusters = pointProcessorI -> MyClustering(segmentCloud.first, 0.5, 5, 1000);;
     int clusterId = 0;
     std::vector<Color> colors = {Color(1,0,0),
                                  Color(0.5,0.5,0),

@@ -1,5 +1,9 @@
 // PCL lib Functions for processing point clouds
+#include <unordered_set>
 #include "processPointClouds.h"
+#include "quiz/ransac/my_ransac.h"
+#include "quiz/cluster/kdtree.h"
+#include "quiz/cluster/euclidean_cluster.h"
 
 
 //constructor:
@@ -122,6 +126,33 @@ ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr c
     return segResult;
 }
 
+template<typename PointT>
+std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr>
+ProcessPointClouds<PointT>::MySegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations,
+                                         float distanceThreshold) {
+    // Time segmentation process
+    auto startTime = std::chrono::steady_clock::now();
+
+    Plane<PointT> model;
+	std::unordered_set<int> pre_inliers = MyRansac(cloud, model, maxIterations, distanceThreshold);
+
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    for(int inlier:pre_inliers)
+        inliers->indices.push_back(inlier);
+
+    if (inliers->indices.size() == 0) {
+        std::cout << "Could not estimate a planar model!" << std::endl;
+    }
+
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
+
+    auto segResult = SeparateClouds(inliers, cloud);
+    return segResult;
+}
+//    Plane<pcl::PointXYZ> model;
+//	std::unordered_set<int> inliers = MyRansac(cloud, model, 100, 0.5);
 
 template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr>
@@ -150,6 +181,51 @@ ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr clo
     for (pcl::PointIndices getIndices: clusterIndices) {
         typename pcl::PointCloud<PointT>::Ptr cloudCluster(new pcl::PointCloud<PointT>());
         for (int index : getIndices.indices)
+            cloudCluster->points.push_back(cloud->points[index]);
+
+        cloudCluster->width = cloudCluster->points.size();
+        cloudCluster->height = 1;
+        cloudCluster->is_dense = true;
+
+        clusters.push_back(cloudCluster);
+
+    }
+
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size()
+              << " clusters" << std::endl;
+
+    return clusters;
+}
+
+
+template<typename PointT>
+std::vector<typename pcl::PointCloud<PointT>::Ptr>
+ProcessPointClouds<PointT>::MyClustering(typename pcl::PointCloud<PointT>::Ptr cloud,
+                                       float clusterTolerance,
+                                       int minSize,
+                                       int maxSize) {
+
+    // Time clustering process
+    auto startTime = std::chrono::steady_clock::now();
+
+    //call my code to do the clustering
+    auto tree = std::unique_ptr<KdTree>(new KdTree);
+
+    std::vector<std::vector<float>> points;
+    for (int i=0; i<cloud->points.size(); i++){
+        points.push_back(to_vector(cloud->points[i]));
+        tree->insert(points[i], i);
+    }
+
+    std::vector<std::vector<int>> clusterIndices = euclideanCluster(points, tree, clusterTolerance);
+
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
+
+    for (auto getIndices: clusterIndices) {
+        typename pcl::PointCloud<PointT>::Ptr cloudCluster(new pcl::PointCloud<PointT>());
+        for (int index : getIndices)
             cloudCluster->points.push_back(cloud->points[index]);
 
         cloudCluster->width = cloudCluster->points.size();

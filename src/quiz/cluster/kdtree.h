@@ -2,7 +2,8 @@
 // Quiz on implementing kd tree
 
 #include "../../render/render.h"
-
+#ifndef PLAYBACK_KDTREE_H
+#define PLAYBACK_KDTREE_H
 
 // Structure to represent node of kd tree
 struct Node
@@ -78,10 +79,8 @@ struct KdTree
 	        ids.push_back(node->id);
 	    }
 	}
-	
-
 };
 
 
-
+#endif
 
